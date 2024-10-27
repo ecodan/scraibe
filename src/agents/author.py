@@ -32,24 +32,23 @@ class Author(LLMActor):
             """
 
     @logio()
-    def ideate(self, genre: str, num_concepts: int, starter_idea: str) -> List[str]:
+    def ideate(self, genre: str, starter_idea: str) -> str:
         output_parser = Author.JsonListOutputParser()
         tplt: ChatPromptTemplate = ChatPromptTemplate.from_messages(
             [
                 ("system",
                  self.identity_prompt_preamble + "\n" +
-                 self.prompt_manager.get_prompt("AUTHOR.IDEATE")
+                 self.prompt_manager.get_prompt([self.creative_mode, "IDEATE"])
                  ),
             ]
         )
         prompt: str = tplt.format(
             genre=genre,
-            num_plots=num_concepts,
             starter=starter_idea,
             format_instructions=output_parser.get_format_instructions()
         )
         res: BaseMessage = self.llm.invoke(prompt)
-        return output_parser.parse(res.content)
+        return res.content
 
     @logio(truncate_at=-1)
     def develop_plot(self, context: StoryContext, critique: str = None) -> str:
@@ -59,8 +58,8 @@ class Author(LLMActor):
                     (
                         "system",
                         self.identity_prompt_preamble + "\n" +
-                        self.prompt_manager.get_prompt("AUTHOR.DEVELOP_PLOT.BASE") + "\n" +
-                        self.prompt_manager.get_prompt("AUTHOR.DEVELOP_PLOT.UNASSISTED")
+                        self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_PLOT", "BASE"]) + "\n" +
+                        self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_PLOT", "UNASSISTED"])
                      ),
                 ]
             )
@@ -70,8 +69,8 @@ class Author(LLMActor):
                     (
                         "system",
                         self.identity_prompt_preamble + "\n" +
-                        self.prompt_manager.get_prompt("AUTHOR.DEVELOP_PLOT.BASE") + "\n" +
-                        self.prompt_manager.get_prompt("AUTHOR.DEVELOP_PLOT.WITH_FEEDBACK")
+                        self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_PLOT", "BASE"]) + "\n" +
+                        self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_PLOT", "WITH_FEEDBACK"])
                     )
                 ]
             )
@@ -89,7 +88,7 @@ class Author(LLMActor):
             [
                 ("system",
                  self.identity_prompt_preamble + "\n" +
-                 self.prompt_manager.get_prompt("AUTHOR.DEVELOP_THEME.UNASSISTED")
+                 self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_THEME", "UNASSISTED"])
                  ),
             ]
         )
@@ -107,8 +106,8 @@ class Author(LLMActor):
                 [
                     ("system",
                      self.identity_prompt_preamble + "\n" +
-                     self.prompt_manager.get_prompt("AUTHOR.DEVELOP_CHARACTERS.BASE") + "\n" +
-                     self.prompt_manager.get_prompt("AUTHOR.DEVELOP_CHARACTERS.UNASSISTED")
+                     self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_CHARACTERS", "BASE"]) + "\n" +
+                     self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_CHARACTERS", "UNASSISTED"])
                      ),
                 ]
             )
@@ -117,8 +116,8 @@ class Author(LLMActor):
                 [
                     ("system",
                      self.identity_prompt_preamble + "\n" +
-                     self.prompt_manager.get_prompt("AUTHOR.DEVELOP_CHARACTERS.BASE") + "\n" +
-                     self.prompt_manager.get_prompt("AUTHOR.DEVELOP_CHARACTERS.WITH_FEEDBACK")
+                     self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_CHARACTERS", "BASE"]) + "\n" +
+                     self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_CHARACTERS", "WITH_FEEDBACK"])
                      ),
                 ]
             )
@@ -140,8 +139,8 @@ class Author(LLMActor):
                 [
                     ("system",
                      self.identity_prompt_preamble + "\n" +
-                     self.prompt_manager.get_prompt("AUTHOR.DEVELOP_WORLD.BASE") + "\n" +
-                     self.prompt_manager.get_prompt("AUTHOR.DEVELOP_WORLD.UNASSISTED")
+                     self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_WORLD", "BASE"]) + "\n" +
+                     self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_WORLD", "UNASSISTED"])
                      ),
                 ]
             )
@@ -150,8 +149,8 @@ class Author(LLMActor):
                 [
                     ("system",
                      self.identity_prompt_preamble + "\n" +
-                     self.prompt_manager.get_prompt("AUTHOR.DEVELOP_WORLD.BASE") + "\n" +
-                     self.prompt_manager.get_prompt("AUTHOR.DEVELOP_WORLD.WITH_FEEDBACK")
+                     self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_WORLD", "BASE"]) + "\n" +
+                     self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_WORLD", "WITH_FEEDBACK"])
                      ),
                 ]
             )
@@ -171,8 +170,8 @@ class Author(LLMActor):
                 [
                     ("system",
                      self.identity_prompt_preamble + "\n" +
-                     self.prompt_manager.get_prompt("AUTHOR.DEVELOP_STORYLINE.BASE") + "\n" +
-                     self.prompt_manager.get_prompt("AUTHOR.DEVELOP_STORYLINE.UNASSISTED")
+                     self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_STORYLINE", "BASE"]) + "\n" +
+                     self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_STORYLINE", "UNASSISTED"])
                      ),
                 ]
             )
@@ -181,8 +180,8 @@ class Author(LLMActor):
                 [
                     ("system",
                      self.identity_prompt_preamble + "\n" +
-                     self.prompt_manager.get_prompt("AUTHOR.DEVELOP_STORYLINE.BASE") + "\n" +
-                     self.prompt_manager.get_prompt("AUTHOR.DEVELOP_STORYLINE.WITH_FEEDBACK")
+                     self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_STORYLINE", "BASE"]) + "\n" +
+                     self.prompt_manager.get_prompt([self.creative_mode, "DEVELOP_STORYLINE", "WITH_FEEDBACK"])
                      ),
                 ]
             )
@@ -204,7 +203,7 @@ class Author(LLMActor):
             [
                 ("system",
                  self.identity_prompt_preamble + "\n" +
-                 self.prompt_manager.get_prompt("AUTHOR.SUMMARIZE_CONCEPT")
+                 self.prompt_manager.get_prompt([self.creative_mode, "SUMMARIZE_CONCEPT"])
                  ),
             ]
         )
@@ -219,6 +218,53 @@ class Author(LLMActor):
         res: BaseMessage = self.llm.invoke(prompt)
         return res.content
 
-    def write_section(self, context: Dict[str, Any]) -> str:
-        pass
+    @logio()
+    def write_section(self, context: StoryContext, num_words, section_number, total_sections, preceding_sections, extended_context) -> str:
+        tplt: ChatPromptTemplate = ChatPromptTemplate.from_messages(
+            [
+                ("system",
+                 self.identity_prompt_preamble + "\n" +
+                 """
+                 You're writing a book based on the following context:\n
+                    IDEA: {concept}\n
+                    PLOT: {plot}\n
+                    THEMES: {themes}\n
+                    CHARACTERS: {characters}\n
+                    WORLD: {world}\n
+                    STORYLINE: {storyline}\n
+                
+                The book so far can be summarized as:\n
+                ========\n
+                {extended_context}\n
+                ========\n
+                
+                The current chapter so far is:\n
+                ========\n
+                {preceding_sections}\n
+                ========\n
+
+                 Write the next section of the current chapter using approximately {num_words} words. This will be number 
+                 {section_number} of {total_sections} total sections in this chapter. If this is one of the last sections, 
+                 prepare to wrap up the chapter. If this is the last section, then end the chapter cleanly. 
+                 
+                 ANSWER: 
+                 """
+                 ),
+            ]
+        )
+        prompt: str = tplt.format(
+            concept=context.concept,
+            plot=context.plot,
+            themes=context.themes,
+            characters=context.characters,
+            storyline=context.storyline,
+            world=context.world,
+            extended_context=extended_context,
+            preceding_sections=preceding_sections,
+            num_words=num_words,
+            section_number=section_number,
+            total_sections=total_sections
+        )
+        res: BaseMessage = self.llm.invoke(prompt)
+        return res.content
 

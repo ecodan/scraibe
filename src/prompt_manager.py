@@ -1,10 +1,11 @@
 import tomllib
+from pathlib import Path
 from typing import Union, Dict, Any
 
 
 class PromptManager:
-    def __init__(self, toml_file_path: str):
-        self.prompts = self._load_toml(toml_file_path)
+    def __init__(self, toml_file_path: str | Path):
+        self.prompts = self._load_toml(str(toml_file_path))
 
     def _load_toml(self, file_path: str) -> Dict[str, Any]:
         with open(file_path, 'rb') as file:

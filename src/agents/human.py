@@ -8,6 +8,19 @@ from src.logutils import logio
 
 class Human(ThreadingActor):
 
+
+    @logio()
+    def prompt_user(self, prompt: str) -> str:
+        return input(prompt)
+
+    def prompt_user_select(self, options: List[str]) -> (int, str):
+        prompt: str = "".join([f"{idx+1}: {option}\n" for idx, option in enumerate(options)])
+        prompt = "Choose one of the following options:\n" + prompt
+        selection: int = int(self.prompt_user(prompt))
+        return selection, options[selection-1]
+
+
+
     @logio()
     def get_starter(self) -> Dict[str, str | int]:
         genre: str = input("which genre? > ")

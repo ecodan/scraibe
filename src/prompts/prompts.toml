@@ -1,9 +1,13 @@
 [AUTHOR]
+HUMAN.GENRE.DEFAULT="What's the genre for this work: "
+HUMAN.STARTER.DEFAULT="Tell me the general idea that I should start with: "
+HUMAN.NUM_IDEAS.DEFAULT="How many ideas should I generate? "
+
+
 IDEATE.DEFAULT="""
-    Create {num_plots} fifty-word plot narratives for the following high-level starter idea:\n
+    Create a fifty-word literary concept (e.g. plot narrative) for the following high-level starter idea:\n
     IDEA: {starter}\n
-    Use the following format to list the plot narratives:\n
-    {format_instructions}\n
+    Respond only with the concept.
     ANSWER:
 
 """

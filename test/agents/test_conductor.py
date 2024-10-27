@@ -34,7 +34,7 @@ class TestConductor(unittest.TestCase):
         self.conductor.author.summarize_concept.return_value.get.return_value = "Summary"
 
         # Call the method under test
-        self.conductor.start()
+        self.conductor.develop_concept()
 
         # Assert that all expected methods were called
         self.conductor.human.get_starter.assert_called_once()

@@ -26,7 +26,8 @@ class StoryContext:
     def marshall(self) -> str:
         return json.dumps(self, default=lambda o: o.__dict__)
 
-    def unmarshall(self, json_str: str) -> "StoryContext":
+    @classmethod
+    def unmarshall(cls, json_str: str) -> "StoryContext":
         context: dict = json.loads(json_str)
         return StoryContext(
             concept=context["concept"],
@@ -38,8 +39,14 @@ class StoryContext:
         )
 
 
-def utc_as_string(dt: datetime = datetime.now(), sub_second: bool = False) -> str:
-    if sub_second:
-        return dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+def utc_as_string(dt: datetime = datetime.now(), compact: bool = True, sub_second: bool = False) -> str:
+    if compact:
+        if sub_second:
+            return dt.strftime('%Y%m%d_%H%M%S.%f')
+        else:
+            return dt.strftime('%Y%m%d_%H%M%S')
     else:
-        return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+        if sub_second:
+            return dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        else:
+            return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
