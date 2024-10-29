@@ -253,13 +253,16 @@ class PaperbackWriter(Conductor):
         for chapter in range(1, num_chapters + 1):
             content: str = self._write_chapter(context, pages_per_chapter, words_per_page, chapter_summaries)
             chapters.append(content)
-            with open(concept_dir / f"chapter_{chapter}", "w") as f:
+            with open(concept_dir / f"chapter_{chapter}.txt", "w") as f:
                 f.write(content)
 
+        with open(concept_dir / f"full_narrative.txt", "w") as f:
+            f.write("\n\n".join(chapters))
 
 
 
 if __name__ == '__main__':
     conductor: Conductor = PaperbackWriter(working_dir="/Users/dan/dev/code/projects/python/scraibe/working", env="bedrock")
-    # concept_dir: Path = conductor.develop_concept()
-    conductor.draft_narrative(Path("/Users/dan/dev/code/projects/python/scraibe/working/concepts/20241026_200601"))
+    concept_dir: Path = conductor.develop_concept()
+    # concept_dir: Path = Path("/Users/dan/dev/code/projects/python/scraibe/working/concepts/20241026_200601")
+    # conductor.draft_narrative(concept_dir)
