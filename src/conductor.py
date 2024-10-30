@@ -22,7 +22,19 @@ logger = create_logger(__name__)
 
 @dataclass
 class Conductor(metaclass=ABCMeta):
+"""
+Base class for orchestrating operations between author, editor and critic agents and humans.
+Provides facilities for prompts and a working dir.
+Hands off initialization of agents to the child class to allow for LLM selection.
 
+Child classes must override:
+- _post_init() - initialize the agents
+- _do_develop_concept() - create the overall concept (plot, storyline, characters, etc.) and puts artifacts in a working dir.
+- _do_develop_narrative() - take the concept and actually write the narrative.
+
+All output for a specific project should be written into the project working directory.
+
+"""
     author: ActorProxy[Author]
     editor: ActorProxy[Editor]
     critic: ActorProxy[Critic]
@@ -82,17 +94,27 @@ class Conductor(metaclass=ABCMeta):
 
     @abstractmethod
     def _do_develop_concept(self, concept_dir: Path, **kwargs):
+        """
+        Override to go from rought idea to fully baked concept.
+        """
         pass
 
     @abstractmethod
     def _do_draft_narrative(self, concept_dir: Path, **kwargs):
+        """
+        Override to take the concept to a full narrative.
+        """
         pass
 
 
 class PaperbackWriter(Conductor):
+    """
+    Implementation of conductor optimized for producing long-form fiction.
+    """
 
     def _post_init(self, **kwargs):
 
+        # this is used by the prompt system to find the right root node
         self.creative_mode = CreativeMode.AUTHOR_MODE
 
         # create LLM
@@ -119,7 +141,7 @@ class PaperbackWriter(Conductor):
             llm=llm,
             prompt_manager=self.prompt_manager,
             creative_mode=self.creative_mode,
-            identity_prompt_preamble="You are a thoughtful and skilled expert in literary fiction."
+            identity_prompt_preamble="You are a thoughtful and skilled fiction writer."
         ).proxy()
 
         self.critic = Critic.start(
@@ -150,24 +172,25 @@ class PaperbackWriter(Conductor):
             - World
             - Themes
             - Storyline
-        - Review with critic; repeat or continue
-        - Write the first chapter
-        - Review with editor; repeat or continue
-        - Repeat
         - Review with critic
-        - Publish
+        - Update all of the above
         """
 
+        # get seed ideas and genre from the human
         genre: str = self.human.prompt_user(self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "GENRE"])).get()
         starter: str = self.human.prompt_user(self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "STARTER"])).get()
         num_concepts: int = int(self.human.prompt_user(self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "NUM_IDEAS"])).get())
 
+        # generat ideas
         futures: list = []
         for i in range(num_concepts):
             futures.append(self.author.ideate(genre, starter))
         ideas: list = [f.get() for f in futures]
+
+        # human selects idea to work with
         idx, selected_idea = self.human.prompt_user_select(ideas).get()
 
+        # generate all of the elements of the story
         context: StoryContext = StoryContext()
         context.concept = selected_idea
         context.plot = self.author.develop_plot(context).get()
@@ -176,27 +199,32 @@ class PaperbackWriter(Conductor):
         context.world = self.author.develop_world(context).get()
         context.storyline = self.author.develop_storyline(context).get()
 
-        # output context
+        # output context (in progress)
         with open(concept_dir / "concept.json", "w") as f:
             f.write(context.marshall())
 
+        # critique the first pass
         critique: str = self.critic.critique_concept(context).get()
+
+        # update the story elements based on the critique
         context.plot = self.author.develop_plot(context, critique=critique).get()
         context.characters = self.author.develop_characters(context, critique=critique).get()
         context.world = self.author.develop_world(context, critique=critique).get()
         context.storyline = self.author.develop_storyline(context, critique=critique).get()
 
-        # output context
+        # output context (final)
         with open(concept_dir / "context.json", "w") as f:
             f.write(context.marshall())
 
+        # generate a markdown summary
         summary: str = self.author.summarize_concept(context).get()
-
-        # output summary
         with open(concept_dir / "summary.md", "w") as f:
             f.write(summary)
 
     def _write_chapter(self, context: StoryContext, pages_per_chapter: int, words_per_page: int, previous_chapter_summaries: list) -> str:
+        """
+        Experimental; writes the next section of the doc.
+        """
         book_summary = "".join([f"Chapter {idx+1}: {chapter}\n" for idx, chapter in enumerate(previous_chapter_summaries)])
         # first pass
         pages: list = []
@@ -207,6 +235,10 @@ class PaperbackWriter(Conductor):
         return chapter
 
     def _do_draft_narrative(self, concept_dir: Path, **kwargs):
+        """
+        Experimental
+        """
+
         logger.info(f"draft narrative for {concept_dir}")
         num_pages: int = 240
         num_chapters: int = 12
@@ -218,13 +250,14 @@ class PaperbackWriter(Conductor):
 
         chapter_summaries: list = []
         chapters: list = []
-        # for chapter in range(1, num_chapters + 1):
-        for chapter in range(1, 1 + 1):
+        for chapter in range(1, num_chapters + 1):
             content: str = self._write_chapter(context, pages_per_chapter, words_per_page, chapter_summaries)
             chapters.append(content)
-            with open(concept_dir / f"chapter_{chapter}", "w") as f:
+            with open(concept_dir / f"chapter_{chapter}.txt", "w") as f:
                 f.write(content)
 
+        with open(concept_dir / f"full_narrative.txt", "w") as f:
+            f.write("\n\n".join(chapters))
 
 class HistoryPodcaster(Conductor):
 
@@ -343,6 +376,11 @@ class HistoryPodcaster(Conductor):
 
 
 if __name__ == '__main__':
+    conductor: Conductor = PaperbackWriter(working_dir="/Users/dan/dev/code/projects/python/scraibe/working", env="bedrock")
+    concept_dir: Path = conductor.develop_concept()
+    # concept_dir: Path = Path("/Users/dan/dev/code/projects/python/scraibe/working/concepts/20241026_200601")
+    # conductor.draft_narrative(concept_dir)
+
     # conductor: Conductor = PaperbackWriter(working_dir="/Users/dan/dev/code/projects/python/scraibe/working", env="bedrock")
     # # concept_dir: Path = conductor.develop_concept()
     # conductor.draft_narrative(Path("/Users/dan/dev/code/projects/python/scraibe/working/concepts/20241026_200601"))
