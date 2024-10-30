@@ -119,7 +119,7 @@ class PaperbackWriter(Conductor):
             llm=llm,
             prompt_manager=self.prompt_manager,
             creative_mode=self.creative_mode,
-            identity_prompt_preamble="You are a thoughtful and skilled fiction writer."
+            identity_prompt_preamble="You are a thoughtful and skilled expert in literary fiction."
         ).proxy()
 
         self.critic = Critic.start(
@@ -218,16 +218,135 @@ class PaperbackWriter(Conductor):
 
         chapter_summaries: list = []
         chapters: list = []
-        for chapter in range(1, num_chapters + 1):
+        # for chapter in range(1, num_chapters + 1):
+        for chapter in range(1, 1 + 1):
             content: str = self._write_chapter(context, pages_per_chapter, words_per_page, chapter_summaries)
             chapters.append(content)
             with open(concept_dir / f"chapter_{chapter}", "w") as f:
                 f.write(content)
 
 
+class HistoryPodcaster(Conductor):
+
+    def _post_init(self, **kwargs):
+
+        self.creative_mode = CreativeMode.PODCAST_MODE
+
+        # create LLM
+        logger.info(f"running creative mode: {self.creative_mode} and env: {kwargs.get('env', 'local')}")
+        if kwargs.get('env', 'local') == 'local':
+            llm: ChatOllama = ChatOllama(
+                model="llama3.2",
+                temperature=0.8,
+                num_predict=256,
+            )
+            llm2: ChatOllama = ChatOllama(
+                model="llama3.2",
+                temperature=0.8,
+                num_predict=256,
+            )
+        elif kwargs.get('env') == 'bedrock':
+            llm: ChatBedrock = ChatBedrock(model_id="anthropic.claude-3-haiku-20240307-v1:0")
+            llm2: ChatBedrock = ChatBedrock(model_id="anthropic.claude-3-sonnet-20240229-v1:0")
+        else:
+            raise ValueError(f"invalid environment {kwargs.get('env')}")
+
+        # start agents
+        self.author = Author.start(
+            llm=llm,
+            prompt_manager=self.prompt_manager,
+            creative_mode=self.creative_mode,
+            identity_prompt_preamble="You are the assistant to a creative podcast producer."
+        ).proxy()
+
+        self.critic = Critic.start(
+            llm=llm2,
+            prompt_manager=self.prompt_manager,
+            creative_mode=self.creative_mode,
+            identity_prompt_preamble="You are a thoughtful and skilled critic on podcasts."
+        ).proxy()
+
+        self.editor = Editor.start(
+            llm=llm2,
+            prompt_manager=self.prompt_manager,
+            creative_mode=self.creative_mode,
+            identity_prompt_preamble="You are the assistant to a creative podcast producer."
+        ).proxy()
+
+        self.human = Human.start().proxy()
+
+    def _do_develop_concept(self, concept_dir: Path, **kwargs):
+        # genre: str = self.human.prompt_user(self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "GENRE"])).get()
+        genre: str = "historical battles"
+        starter: str = self.human.prompt_user(self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "STARTER"])).get()
+        num_concepts: int = int(self.human.prompt_user(self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "NUM_IDEAS"])).get())
+
+        futures: list = []
+        for i in range(num_concepts):
+            futures.append(self.author.ideate(genre, starter))
+        ideas: list = [f.get() for f in futures]
+        idx, selected_idea = self.human.prompt_user_select(ideas).get()
+
+        context: StoryContext = StoryContext()
+        context.concept = selected_idea
+        context.plot = self.author.develop_plot(context).get()
+        context.themes = self.author.develop_themes(context).get()
+        context.characters = self.author.develop_characters(context).get()
+        # context.world = self.author.develop_world(context).get()
+        context.storyline = self.author.develop_storyline(context).get()
+
+        # output context
+        with open(concept_dir / "concept.json", "w") as f:
+            f.write(context.marshall())
+
+        critique: str = self.critic.critique_concept(context).get()
+        context.plot = self.author.develop_plot(context, critique=critique).get()
+        context.characters = self.author.develop_characters(context, critique=critique).get()
+        # context.world = self.author.develop_world(context, critique=critique).get()
+        context.storyline = self.author.develop_storyline(context, critique=critique).get()
+
+        # output context
+        with open(concept_dir / "context.json", "w") as f:
+            f.write(context.marshall())
+
+        summary: str = self.author.summarize_concept(context).get()
+
+        # output summary
+        with open(concept_dir / "summary.md", "w") as f:
+            f.write(summary)
+
+
+    def _write_segment(self, context: StoryContext, num_words: int, previous_segment_summaries: list) -> str:
+        full_summary = "".join([f"Segment {idx+1}: {segment}\n" for idx, segment in enumerate(previous_segment_summaries)])
+        # first pass
+        content = self.author.write_section(context, num_words, 1, 1, "", full_summary).get()
+        return content
+
+    def _do_draft_narrative(self, concept_dir: Path, **kwargs):
+        logger.info(f"draft narrative for {concept_dir}")
+        num_segments: int = 4
+        words_per_segment: int = 1000
+
+        with open(concept_dir / "context.json", "r") as f:
+            context = StoryContext.unmarshall(f.read())
+
+        segment_summaries: list = []
+        segments: list = []
+        for chapter in range(1, num_segments + 1):
+            content: str = self._write_segment(context, words_per_segment, segment_summaries)
+            segments.append(content)
+            with open(concept_dir / f"segment_{chapter}.txt", "w") as f:
+                f.write(content)
+
+        with open(concept_dir / f"podcast.txt", "w") as f:
+            f.write("\n\n".join(segments))
 
 
 if __name__ == '__main__':
-    conductor: Conductor = PaperbackWriter(working_dir="/Users/dan/dev/code/projects/python/scraibe/working", env="bedrock")
+    # conductor: Conductor = PaperbackWriter(working_dir="/Users/dan/dev/code/projects/python/scraibe/working", env="bedrock")
+    # # concept_dir: Path = conductor.develop_concept()
+    # conductor.draft_narrative(Path("/Users/dan/dev/code/projects/python/scraibe/working/concepts/20241026_200601"))
+
+    conductor: Conductor = HistoryPodcaster(working_dir="/Users/dan/dev/code/projects/python/scraibe/working", env="local")
     # concept_dir: Path = conductor.develop_concept()
-    conductor.draft_narrative(Path("/Users/dan/dev/code/projects/python/scraibe/working/concepts/20241026_200601"))
+    conductor.draft_narrative(Path("/Users/dan/dev/code/projects/python/scraibe/working/concepts/20241028_122939"))

@@ -225,7 +225,7 @@ class Author(LLMActor):
                 ("system",
                  self.identity_prompt_preamble + "\n" +
                  """
-                 You're writing a book based on the following context:\n
+                 You're helping the author write a story based on the following context:\n
                     IDEA: {concept}\n
                     PLOT: {plot}\n
                     THEMES: {themes}\n
@@ -233,21 +233,24 @@ class Author(LLMActor):
                     WORLD: {world}\n
                     STORYLINE: {storyline}\n
                 
-                The book so far can be summarized as:\n
+                The story so far can be summarized as:\n
                 ========\n
                 {extended_context}\n
                 ========\n
                 
-                The current chapter so far is:\n
+                The current section so far is:\n
                 ========\n
                 {preceding_sections}\n
                 ========\n
 
-                 Write the next section of the current chapter using approximately {num_words} words. This will be number 
-                 {section_number} of {total_sections} total sections in this chapter. If this is one of the last sections, 
-                 prepare to wrap up the chapter. If this is the last section, then end the chapter cleanly. 
+                 Provide suggested content for the next tranche of the current section using approximately {num_words} 
+                 words. This will be number {section_number} of {total_sections} total sections in this chapter. 
+                 If this is one of the last tranches, prepare to wrap up the chapter. If this is the last tranches, 
+                 then end the section cleanly.\n
                  
-                 ANSWER: 
+                 Don't provide a preamble; only respond with the content.\n
+                 
+                 ANSWER: Here is a suggestion for the next tranche of the current section:\n\n
                  """
                  ),
             ]

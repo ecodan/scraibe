@@ -233,3 +233,234 @@ Respond only with the markdown and no preamble or other content.\n
 
 ANSWER:
 """
+
+[PODCAST]
+HUMAN.GENRE.DEFAULT="What's the genre for this work: "
+HUMAN.STARTER.DEFAULT="Tell me the general idea that I should start with: "
+HUMAN.NUM_IDEAS.DEFAULT="How many ideas should I generate? "
+
+
+IDEATE.DEFAULT="""
+    Create a fifty-word concept for a podcast episode (e.g. plot narrative) for the following high-level starter idea:\n
+    IDEA: {starter}\n
+    Respond only with the concept.
+    ANSWER:
+
+"""
+
+DEVELOP_PLOT.BASE.DEFAULT="""
+    You're helping develop a concept for a podcast episode based on the following idea:\n
+    IDEA: {concept}\n
+"""
+
+DEVELOP_PLOT.UNASSISTED.DEFAULT= """
+    Step back and think about a compelling plot that builds on the idea.
+    Summarize the plot in 500 words or less.\n
+    ANSWER:
+
+"""
+
+DEVELOP_PLOT.WITH_FEEDBACK.DEFAULT= """
+    Here's the plot you've developed:\n
+    CURRENT PLOT: {plot}\n
+    Refine the current plot based on the following feedback:\n
+    FEEDBACK: {feedback}\n
+    Answer only with the new plot; do not preface with commentary about the feedback or changes.\n
+    ANSWER:
+
+"""
+
+DEVELOP_THEME.UNASSISTED.DEFAULT = """
+You're helping develop a concept for a podcast episode based on the following idea:\n
+IDEA: {concept}\n
+Here's the plot that builds on the idea:\n
+PLOT: {plot}\n
+
+Step back and think about one or more compelling themes that should thread through the story.\n
+
+Here are some examples of themes, but you may use any theme that you want.\n
+EXAMPLE THEMES:\n"
+1.  **The Human Condition**: Exploring the complexities and struggles of
+human existence, including emotions, relationships, identity, and
+mortality.
+2.  **Love and Relationships**: Investigating the various forms love can
+take, such as romantic love, familial love, friendship, and self-love.
+3.  **Morality and Ethics**: Examining moral dilemmas, right vs. wrong,
+and the consequences of our actions.
+4.  **Identity and Self-Discovery**: Following characters' journeys to
+discover their values, purpose, and place in the world.
+5.  **Social Commentary**: Critiquing societal norms, politics, and
+cultural institutions through satire, allegory, or realism.
+6.  **The Power of Nature**: Using the natural world as a symbol for human
+existence, fate, or the sublime.
+7.  **Rebellion and Nonconformity**: Portraying characters who defy
+authority, challenge traditional values, or pursue unconventional paths.
+8.  **The Impact of Trauma and Memory**: Exploring how past experiences
+shape our understanding of ourselves and the world around us.
+9.  **Redemption and Atonement**: Examining themes of forgiveness, guilt,
+and personal growth as characters strive to make amends or find
+redemption.
+10. **The Illusion of Reality**: Investigating the nature of
+reality, truth, and perception through metaphors, illusions, or
+supernatural elements.\n
+
+Summarize the theme or themes for the new story in 500 words or less.\n
+ANSWER:
+"""
+
+DEVELOP_CHARACTERS.BASE.DEFAULT = """
+You're helping develop a concept for a podcast episode based on the following idea:\n
+IDEA: {concept}\n
+Here's the plot that builds on the idea:\n
+PLOT: {plot}\n
+The story will also examing the following literary themes:\n
+THEMES: {themes}\n
+
+"""
+
+DEVELOP_CHARACTERS.UNASSISTED.DEFAULT = """
+Step back and think about the characters that will give the story life. Who are they? What makes them tick?
+What are their backstories? What role do they play in the story?\n
+
+Provide details about each character in the following markdown format:\n
+
+====
+#Cast of Characters
+##<NAME>
+###Role in Story
+<content>
+###Backstory
+<content>
+###Personality
+<content>
+###Characteristics
+<content>
+###Age
+<content>
+###Gender
+<content>
+###Race/Species
+<content>
+###Physical Appearance
+<content>
+
+====
+
+Answer only with the character markdown.\n
+
+ANSWER:
+"""
+
+DEVELOP_CHARACTERS.WITH_FEEDBACK.DEFAULT = """
+Here are the characters you've developed:\n
+CURRENT CHARACTERS: {characters}\n
+
+Here's some helpful feedback on ways to make the characters more compelling and believable:\n
+FEEDBACK: {feedback}\n
+
+Refine the current characters based on the feedback. Answer only with the character markdown.\n
+
+ANSWER:
+"""
+
+DEVELOP_WORLD.BASE.DEFAULT = """
+You're helping develop a concept for a podcast episode based on the following idea:\n"
+IDEA: {concept}\n"
+Here's the plot that builds on the idea:\n"
+PLOT: {plot}\n"
+
+
+"""
+
+DEVELOP_WORLD.UNASSISTED.DEFAULT = """
+Step back and think about the world and timeframe of the story.\n
+Use current and historical facts to build the world
+around the character with real characters.
+Describe the world and relevant cronology in 2000 words or less.\n
+ANSWER:
+"""
+
+DEVELOP_WORLD.WITH_FEEDBACK.DEFAULT = """
+Here is the world you've developed:\n
+CURRENT WORLD: {world}\n
+
+Here's some helpful feedback on how you can improve on the current version:
+FEEDBACK: {feedback}\n
+
+Refine the current world based on the provided feedback. Only respond with the new world description. Don't include
+a preamble or other commentary about updates or feedback.\n
+
+ANSWER:
+"""
+
+DEVELOP_STORYLINE.BASE.DEFAULT = """
+You're helping develop a concept for a podcast episode based on the following idea:\n
+IDEA: {concept}\n
+Here's the plot that builds on the idea:\n
+PLOT: {plot}\n
+The story will also examining the following literary themes:\n
+THEMES: {themes}\n
+Here are the characters used in the story and their definitions:\n
+CHARACTERS: {characters}\n
+Here's a description of the world the characters inhabit:\n
+WORLD: {world}\n
+
+"""
+
+DEVELOP_STORYLINE.UNASSISTED.DEFAULT = """
+Step back and think about how the podcast will flow.\n
+Write a detailed storyline in 1000 words or less that can be used to generate an outline.\n
+ANSWER:
+
+"""
+
+DEVELOP_STORYLINE.WITH_FEEDBACK.DEFAULT = """
+Here is the storyline you've developed:\n
+CURRENT STORYLINE: {storyline}\n
+
+Here's some helpful feedback on how you can improve on the current version:\n
+FEEDBACK: {feedback}\n
+
+Refine the current storyline based on the provided feedback. Only respond with the storyline. Don't include
+a preamble or other commentary about updates or feedback.\n
+
+ANSWER:
+
+"""
+SUMMARIZE_CONCEPT.DEFAULT = """
+You're helping develop a concept for a podcast episode based on the following idea:\n
+IDEA: {concept}\n
+Here's the plot that builds on the idea:\n
+PLOT: {plot}\n
+The story will also examining the following literary themes:\n
+THEMES: {themes}\n
+Here are the characters used in the story and their definitions:\n
+CHARACTERS: {characters}\n
+Here's a description of the world the characters inhabit:\n
+WORLD: {world}\n
+Here's the storyline you developed:\n
+STORYLINE: {storyline}\n
+
+Summarize the concept in 1500 words or less. Keep the same sections
+(idea, plot, themes, characters, world and storyline) and use markdown to denote headers,
+bullets and other organizational elements.\n
+
+For example:
+#<TITLE>
+##IDEA
+<content>
+##PLOT
+<content>
+##THEMES
+<content>
+##CHARACTERS
+<content>
+##WORLD
+<content>
+##STORYLINE
+<content>\n
+
+Respond only with the markdown and no preamble or other content.\n
+
+ANSWER:
+"""
