@@ -1,15 +1,15 @@
+import logging
 import os
 from abc import abstractmethod, ABCMeta
 from dataclasses import dataclass
+from logging import Logger
 from pathlib import Path
 
-from langchain.chat_models import ChatOllama
 from langchain_aws import ChatBedrock
+from langchain_community.chat_models import ChatOllama
 from pykka import ActorProxy
 
 from src.agents.actor import CreativeMode
-from src.logutils import create_logger
-
 from src.agents.author import Author
 from src.agents.critic import Critic
 from src.agents.editor import Editor
@@ -17,30 +17,30 @@ from src.agents.human import Human
 from src.prompt_manager import PromptManager
 from src.utils import StoryContext, utc_as_string
 
-logger = create_logger(__name__)
+logger: Logger = logging.getLogger("scrAIbe")
 
 
 @dataclass
 class Conductor(metaclass=ABCMeta):
-"""
-Base class for orchestrating operations between author, editor and critic agents and humans.
-Provides facilities for prompts and a working dir.
-Hands off initialization of agents to the child class to allow for LLM selection.
+    """
+    Base class for orchestrating operations between author, editor and critic agents and humans.
+    Provides facilities for prompts and a working dir.
+    Hands off initialization of agents to the child class to allow for LLM selection.
 
-Child classes must override:
-- _post_init() - initialize the agents
-- _do_develop_concept() - create the overall concept (plot, storyline, characters, etc.) and puts artifacts in a working dir.
-- _do_develop_narrative() - take the concept and actually write the narrative.
+    Child classes must override:
+    - _post_init() - initialize the agents
+    - _do_develop_concept() - create the overall concept (plot, storyline, characters, etc.) and puts artifacts in a working dir.
+    - _do_develop_narrative() - take the concept and actually write the narrative.
 
-All output for a specific project should be written into the project working directory.
+    All output for a specific project should be written into the project working directory.
 
-"""
+    """
     author: ActorProxy[Author]
     editor: ActorProxy[Editor]
     critic: ActorProxy[Critic]
     human: ActorProxy[Human]
 
-    def __init__(self, working_dir: str, **kwargs) -> None:
+    def __init__(self, working_dir: Path, **kwargs) -> None:
         super().__init__()
 
         # load prompts
@@ -50,7 +50,7 @@ All output for a specific project should be written into the project working dir
         self.prompt_manager: PromptManager = PromptManager(prompt_file_path)
 
         # validate working dir
-        self.working_dir: Path = Path(working_dir)
+        self.working_dir: Path = working_dir
         assert self.working_dir.is_dir(), f"{self.working_dir} is not a valid directory"
 
         # hand off to child class to finish init
@@ -148,7 +148,7 @@ class PaperbackWriter(Conductor):
             llm=llm2,
             prompt_manager=self.prompt_manager,
             creative_mode=self.creative_mode,
-            identity_prompt_preamble = "You are a thoughtful and skilled literary critic who likes to help writers improve."
+            identity_prompt_preamble="You are a thoughtful and skilled literary critic who likes to help writers improve."
         ).proxy()
 
         self.editor = Editor.start(
@@ -160,7 +160,7 @@ class PaperbackWriter(Conductor):
 
         self.human = Human.start().proxy()
 
-    def _do_develop_concept(self, concept_dir: Path,**kwargs):
+    def _do_develop_concept(self, concept_dir: Path, **kwargs):
         """
         Order of operations
         - Get starter idea from human
@@ -177,9 +177,12 @@ class PaperbackWriter(Conductor):
         """
 
         # get seed ideas and genre from the human
-        genre: str = self.human.prompt_user(self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "GENRE"])).get()
-        starter: str = self.human.prompt_user(self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "STARTER"])).get()
-        num_concepts: int = int(self.human.prompt_user(self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "NUM_IDEAS"])).get())
+        genre: str = self.human.prompt_user(
+            self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "GENRE"])).get()
+        starter: str = self.human.prompt_user(
+            self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "STARTER"])).get()
+        num_concepts: int = int(self.human.prompt_user(
+            self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "NUM_IDEAS"])).get())
 
         # generat ideas
         futures: list = []
@@ -221,22 +224,26 @@ class PaperbackWriter(Conductor):
         with open(concept_dir / "summary.md", "w") as f:
             f.write(summary)
 
-    def _write_chapter(self, context: StoryContext, pages_per_chapter: int, words_per_page: int, previous_chapter_summaries: list) -> str:
+    def _write_chapter(self, context: StoryContext, pages_per_chapter: int, words_per_page: int,
+                       previous_chapter_summaries: list) -> str:
         """
         Experimental; writes the next section of the doc.
         """
-        book_summary = "".join([f"Chapter {idx+1}: {chapter}\n" for idx, chapter in enumerate(previous_chapter_summaries)])
+        book_summary = "".join(
+            [f"Chapter {idx + 1}: {chapter}\n" for idx, chapter in enumerate(previous_chapter_summaries)])
         # first pass
         pages: list = []
         for page in range(1, pages_per_chapter + 1):
             chapter_so_far: str = "".join([f"{p}\n" for idx, p in enumerate(pages)])
-            pages.append(self.author.write_section(context, words_per_page, page, pages_per_chapter, chapter_so_far, book_summary).get())
+            pages.append(self.author.write_section(context, words_per_page, page, pages_per_chapter, chapter_so_far,
+                                                   book_summary).get())
         chapter: str = " ".join(pages)
         return chapter
 
     def _do_draft_narrative(self, concept_dir: Path, **kwargs):
         """
-        Experimental
+        Experimental; turns the concept into a full narrative. Works well for a single chapter, but struggling to
+        keep continuity and flow across sections and chapters.
         """
 
         logger.info(f"draft narrative for {concept_dir}")
@@ -259,7 +266,11 @@ class PaperbackWriter(Conductor):
         with open(concept_dir / f"full_narrative.txt", "w") as f:
             f.write("\n\n".join(chapters))
 
+
 class HistoryPodcaster(Conductor):
+    """
+    Experimental.
+    """
 
     def _post_init(self, **kwargs):
 
@@ -311,8 +322,10 @@ class HistoryPodcaster(Conductor):
     def _do_develop_concept(self, concept_dir: Path, **kwargs):
         # genre: str = self.human.prompt_user(self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "GENRE"])).get()
         genre: str = "historical battles"
-        starter: str = self.human.prompt_user(self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "STARTER"])).get()
-        num_concepts: int = int(self.human.prompt_user(self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "NUM_IDEAS"])).get())
+        starter: str = self.human.prompt_user(
+            self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "STARTER"])).get()
+        num_concepts: int = int(self.human.prompt_user(
+            self.prompt_manager.get_prompt([self.creative_mode.value, "HUMAN", "NUM_IDEAS"])).get())
 
         futures: list = []
         for i in range(num_concepts):
@@ -348,9 +361,9 @@ class HistoryPodcaster(Conductor):
         with open(concept_dir / "summary.md", "w") as f:
             f.write(summary)
 
-
     def _write_segment(self, context: StoryContext, num_words: int, previous_segment_summaries: list) -> str:
-        full_summary = "".join([f"Segment {idx+1}: {segment}\n" for idx, segment in enumerate(previous_segment_summaries)])
+        full_summary = "".join(
+            [f"Segment {idx + 1}: {segment}\n" for idx, segment in enumerate(previous_segment_summaries)])
         # first pass
         content = self.author.write_section(context, num_words, 1, 1, "", full_summary).get()
         return content
@@ -373,18 +386,3 @@ class HistoryPodcaster(Conductor):
 
         with open(concept_dir / f"podcast.txt", "w") as f:
             f.write("\n\n".join(segments))
-
-
-if __name__ == '__main__':
-    conductor: Conductor = PaperbackWriter(working_dir="/Users/dan/dev/code/projects/python/scraibe/working", env="bedrock")
-    concept_dir: Path = conductor.develop_concept()
-    # concept_dir: Path = Path("/Users/dan/dev/code/projects/python/scraibe/working/concepts/20241026_200601")
-    # conductor.draft_narrative(concept_dir)
-
-    # conductor: Conductor = PaperbackWriter(working_dir="/Users/dan/dev/code/projects/python/scraibe/working", env="bedrock")
-    # # concept_dir: Path = conductor.develop_concept()
-    # conductor.draft_narrative(Path("/Users/dan/dev/code/projects/python/scraibe/working/concepts/20241026_200601"))
-
-    conductor: Conductor = HistoryPodcaster(working_dir="/Users/dan/dev/code/projects/python/scraibe/working", env="local")
-    # concept_dir: Path = conductor.develop_concept()
-    conductor.draft_narrative(Path("/Users/dan/dev/code/projects/python/scraibe/working/concepts/20241028_122939"))
