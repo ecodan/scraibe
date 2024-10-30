@@ -1,14 +1,12 @@
 import json
-from typing import List, Dict, Any
+from typing import List
 
-from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
-from langchain_core.output_parsers import JsonOutputParser, CommaSeparatedListOutputParser
+from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from src.agents.actor import LLMActor
 from src.logutils import logio
-from src.prompt_manager import PromptManager
 from src.utils import StoryContext
 
 
@@ -224,34 +222,7 @@ class Author(LLMActor):
             [
                 ("system",
                  self.identity_prompt_preamble + "\n" +
-                 """
-                 You're helping the author write a story based on the following context:\n
-                    IDEA: {concept}\n
-                    PLOT: {plot}\n
-                    THEMES: {themes}\n
-                    CHARACTERS: {characters}\n
-                    WORLD: {world}\n
-                    STORYLINE: {storyline}\n
-                
-                The story so far can be summarized as:\n
-                ========\n
-                {extended_context}\n
-                ========\n
-                
-                The current section so far is:\n
-                ========\n
-                {preceding_sections}\n
-                ========\n
-
-                 Provide suggested content for the next tranche of the current section using approximately {num_words} 
-                 words. This will be number {section_number} of {total_sections} total sections in this chapter. 
-                 If this is one of the last tranches, prepare to wrap up the chapter. If this is the last tranches, 
-                 then end the section cleanly.\n
-                 
-                 Don't provide a preamble; only respond with the content.\n
-                 
-                 ANSWER: Here is a suggestion for the next tranche of the current section:\n\n
-                 """
+                 self.prompt_manager.get_prompt([self.creative_mode, "DRAFT", "SECTION"])
                  ),
             ]
         )
